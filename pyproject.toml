@@ -1,0 +1,22 @@
+[project]
+name = "vival"
+version = "0.1.0"
+description = "A visual AI dictionary"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.55.1",
+    "python-dotenv>=1.0.1",
+    "dash>=2.18.2",
+    "dash-mantine-components>=0.15.1",
+    "dash-iconify>=0.1.2",
+    "diskcache>=5.6.3",
+    "pillow>=11.1.0",
+]
+
+
+[tool.ruff]
+line-length = 120
+
+[tool.setuptools]
+packages = { find = { where = ["src"] } }
