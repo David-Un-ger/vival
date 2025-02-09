@@ -2,13 +2,24 @@ import dash_mantine_components as dmc
 from dash import Dash, Input, Output, State, _dash_renderer, dcc
 from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
+from flask import Flask, send_from_directory
 
 from components import paper_with_label
 from data import get_dictionary, get_image
+from definitions import IMAGE_FOLDER
 
 _dash_renderer._set_react_version("18.2.0")
 
-app = Dash(external_stylesheets=dmc.styles.ALL)
+server = Flask(__name__)
+
+
+@server.route("/images/<path:image_name>")
+def serve_image(image_name):
+    """Use the flask server to serve the images as they are not accessible from the Dash app"""
+    return send_from_directory(IMAGE_FOLDER, image_name)
+
+
+app = Dash(external_stylesheets=dmc.styles.ALL, server=server)
 
 """
 Callback structure:
@@ -30,7 +41,7 @@ app.layout = dmc.MantineProvider(
         dmc.Stack(
             [
                 dmc.Title("vival", style={"fontSize": "80px", "fontWeight": "bold", "marginBottom": "-20px"}, order=1),
-                dmc.Title("The Visual AI Dictionary", style={"fontSize": "16px"}, order=2),
+                dmc.Title("The Visual Dictionary", style={"fontSize": "16px"}, order=2),
                 dmc.TextInput(
                     id="search-input",
                     w=300,
@@ -97,6 +108,16 @@ app.layout = dmc.MantineProvider(
                                             ],
                                         ),
                                         paper_with_label(
+                                            "Phonetics",
+                                            [
+                                                dmc.Text(
+                                                    "/ˈlændskeɪp/",
+                                                    size="sm",
+                                                    id="show-phonetics",
+                                                ),
+                                            ],
+                                        ),
+                                        paper_with_label(
                                             "Synonyms",
                                             [
                                                 dmc.Group(
@@ -125,23 +146,12 @@ app.layout = dmc.MantineProvider(
                                                 ),
                                                 dmc.Image(
                                                     src="https://raw.githubusercontent.com/mantinedev/mantine/master/.demo/images/bg-8.png",
-                                                    h=256,
-                                                    w=256,
-                                                    alt="Norway",
+                                                    # h=256,
+                                                    # w=256,
                                                     id="show-image",
                                                 ),
                                             ],
                                             center=True,
-                                        ),
-                                        paper_with_label(
-                                            "Phonetics",
-                                            [
-                                                dmc.Text(
-                                                    "/ˈlændskeɪp/",
-                                                    size="sm",
-                                                    id="show-phonetics",
-                                                ),
-                                            ],
                                         ),
                                     ],
                                 ),
@@ -226,6 +236,7 @@ def show_image(dict_):
     image_text = dict_.get("image_description")
     word = dict_.get("word")
     print("debug", image_text, word)
+    print("debug debug 2", get_image(word, image_text))
     return get_image(word, image_text), False
 
 

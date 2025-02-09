@@ -5,7 +5,7 @@ from pathlib import Path
 
 from diskcache import Cache
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import OpenAI, RateLimitError
 from PIL import Image
 
 cache = Cache(".cache")
@@ -51,19 +51,23 @@ Output:
 def get_dictionary(word: str) -> dict:
     messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": word}]
     print(f"Generating dictionary for {word}")
-    model_output = openai.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=messages,
-    )
+    try:
+        model_output = openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+        )
+
+    except RateLimitError:
+        return {"word": word, "error": "OpenAI rate limit reached"}
     reply_str = model_output.choices[0].message.content
     return json.loads(reply_str)
 
 
 def get_image(word: str, image_description: str) -> str:
-    image_path = Path(f"C:\\Scarlett\\llm_engineering\\vival\\dictionary\\assets\\images\\{word}.png")
+    image_path = Path(f"C:\\Scarlett\\vival\\assets\\images\\{word}.png")
     if image_path.exists():
         print("Existing image found")
-        return f"assets/images/{word}.png"
+        return f"/images/{word}.png"
     print(f"Generating image for {word} with description {image_description}")
     image_response = openai.images.generate(
         model="dall-e-3",
@@ -78,4 +82,4 @@ def get_image(word: str, image_description: str) -> str:
     image.save(image_path)
     print(f"Image saved to {image_path}")
 
-    return f"assets/images/{word}.png"
+    return f"/images/{word}.png"
