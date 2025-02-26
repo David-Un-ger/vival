@@ -1,5 +1,6 @@
 import base64
 import json
+import os
 from io import BytesIO
 from pathlib import Path
 
@@ -10,7 +11,8 @@ from PIL import Image
 
 cache = Cache(".cache")
 load_dotenv()
-openai = OpenAI()
+openai_client = OpenAI()
+nebius_client = OpenAI(base_url="https://api.studio.nebius.com/v1/", api_key=os.environ.get("NEBIUS_API_KEY"))
 
 system_prompt = """You are an expert in language and are asked to help the user to 
 get a better understanding of words. 
@@ -28,8 +30,12 @@ The keys are "meaning", "synonyms", "usage", "phonetics", "pronunciation", "imag
 - pronunciation: similar sounding words
 - image_description: a short description of an image that could be shown to the user. This text is later processed by the AI to generate an image.
 
+Possible Errors:
+- If the word is not an English word or not a word at all, return {"word": >your_word<, "error": "Word not found"}
+- If the word provided is a whole sentence, return {"word": >your_word<, "error": "Sentence not allowed"}
+- If the word is misspelled, return {"word": >your_word<, "error": "Word misspelled", "suggestions": >list_of_suggestions<}
 
-An example: User input: "embrace"
+Example 1: User input: "embrace"
 
 Output:
 {
@@ -44,6 +50,16 @@ Output:
   "pronunciation": ["empty", "emerge", "bracelet", "race"],
   "image_description": "A person hugging another person. One can see the bracelet on the arm of the person."
 }
+
+Example 2: User input: "happyness"
+
+Output:
+{
+  "word": "happyness",
+  "error": "Word misspelled",
+  "suggestions": ["happiness", "happenings", "happening"]
+}
+
 """
 
 
@@ -52,7 +68,7 @@ def get_dictionary(word: str) -> dict:
     messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": word}]
     print(f"Generating dictionary for {word}")
     try:
-        model_output = openai.chat.completions.create(
+        model_output = openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
         )
@@ -63,13 +79,24 @@ def get_dictionary(word: str) -> dict:
     return json.loads(reply_str)
 
 
-def get_image(word: str, image_description: str) -> str:
+def get_image(word: str, image_description: str, generator: str = "nebius") -> str:
     image_path = Path(f"C:\\Scarlett\\vival\\assets\\images\\{word}.png")
     if image_path.exists():
         print("Existing image found")
         return f"/images/{word}.png"
     print(f"Generating image for {word} with description {image_description}")
-    image_response = openai.images.generate(
+
+    if generator == "dalle":
+        generate_image_dalle(image_path, image_description)
+    elif generator == "nebius":
+        get_image_nebius(image_path, image_description)
+    else:
+        raise ValueError(f"Unknown generator {generator}")
+    return f"/images/{word}.png"
+
+
+def generate_image_dalle(image_path: Path, image_description: str):
+    image_response = openai_client.images.generate(
         model="dall-e-3",
         prompt=image_description,
         size="1024x1024",
@@ -82,4 +109,20 @@ def get_image(word: str, image_description: str) -> str:
     image.save(image_path)
     print(f"Image saved to {image_path}")
 
-    return f"/images/{word}.png"
+
+def get_image_nebius(image_path: Path, image_description: str):
+    response = nebius_client.images.generate(
+        model="black-forest-labs/flux-schnell",
+        response_format="b64_json",
+        extra_body={
+            "response_extension": "webp",
+            "width": 1024,
+            "height": 1024,
+            "num_inference_steps": 4,
+            "negative_prompt": "",
+            "seed": -1,
+        },
+        prompt=image_description,
+    )
+
+    print(response.to_json())

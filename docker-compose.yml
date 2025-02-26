@@ -1,0 +1,41 @@
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /workspace
+          ignore:
+            - .venv/
+
+        # Rebuild the image on changes to the `pyproject.toml`
+        - action: rebuild
+          path: ./pyproject.toml
+
+    #volumes:
+    #  - .:/workspace
+    #  - /workspace/.venv
+      
+    #network_mode: service:db
+    depends_on:
+      - db
+    command: sleep infinity
+    ports:
+      - "8050:8050"
+
+  db:
+    image: postgres:latest
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+
+volumes:
+  postgres-data:
