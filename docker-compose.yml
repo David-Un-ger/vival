@@ -18,11 +18,11 @@ services:
 
     volumes:
      - .:/workspace
-     - /workspace/.venv
+    # - /workspace/.venv
       
     #network_mode: service:db
-    depends_on:
-      - postgres
+    # depends_on:
+    #   - postgres
     command: sleep infinity
     ports:
       - "8050:8050"
@@ -45,7 +45,10 @@ services:
     env_file:
       - .env
     ports:
-      - "5050:80"
+      - "5050:80"  # http://localhost:5050
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
 
 volumes:
+  pgadmin_data:
   postgres_data:

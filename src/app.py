@@ -5,8 +5,9 @@ from dash_iconify import DashIconify
 from flask import Flask, send_from_directory
 
 from components import paper_with_label
-from data import get_dictionary, get_image
 from definitions import IMAGE_FOLDER
+from src.data.database import get_dictionary
+from src.data.generate import generate_image
 
 _dash_renderer._set_react_version("18.2.0")
 
@@ -235,9 +236,8 @@ def show_image(dict_):
 
     image_text = dict_.get("image_description")
     word = dict_.get("word")
-    print("debug", image_text, word)
-    print("debug debug 2", get_image(word, image_text))
-    return get_image(word, image_text), False
+    generate_image(word, image_text)
+    return f"/images/{word}.png", False
 
 
 @app.callback(
@@ -254,5 +254,5 @@ def clear_search_and_hide_output_card(n_clicks):
 
 
 if __name__ == "__main__":
-    #app.run(debug=False)
-    app.run(host="0.0.0.0", port=8050, debug=False)
+    # app.run(debug=False)
+    app.run(host="127.0.0.1", port=8050, debug=True)

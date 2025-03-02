@@ -1,6 +1,5 @@
 assets/
 *.png
-*.ipynb
 
 # from https://github.com/github/gitignore/blob/main/Python.gitignore
 
