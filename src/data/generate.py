@@ -1,15 +1,11 @@
-import base64
 import json
 import os
-from io import BytesIO
 
 from dotenv import load_dotenv
 from openai import OpenAI, RateLimitError
 from openai.types import ImagesResponse
-from PIL import Image
 
 from src.data.prompts import dictionary_system_prompt
-from src.definitions import IMAGE_FOLDER
 
 load_dotenv()
 openai_client = OpenAI()
@@ -31,26 +27,13 @@ def generate_dictionary(word: str) -> dict:
     return json.loads(reply_str)
 
 
-def generate_image(word: str, image_description: str, generator: str = "nebius") -> str:
-    image_path = IMAGE_FOLDER / f"{word}.png"
-    if image_path.exists():
-        print("Existing image found")
-        return f"/images/{word}.png"
-    print(f"Generating image for {word} with description {image_description}")
-
+def generate_image(image_description: str, generator: str = "nebius") -> ImagesResponse:
     if generator == "dalle":
-        image_response = generate_image_dalle(image_description)
+        return generate_image_dalle(image_description)
     elif generator == "nebius":
-        image_response = generate_image_nebius(image_description)
+        return generate_image_nebius(image_description)
     else:
         raise ValueError(f"Unknown generator {generator}")
-
-    image_base64 = image_response.data[0].b64_json
-    image_data = base64.b64decode(image_base64)
-    image = Image.open(BytesIO(image_data))
-    image.save(image_path)
-    print(f"Image saved to {image_path}")
-    return f"/images/{word}.png"
 
 
 def generate_image_dalle(image_description: str) -> ImagesResponse:
