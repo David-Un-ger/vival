@@ -3,55 +3,43 @@ import os
 from io import BytesIO
 
 from PIL import Image
-from psycopg2.pool import ThreadedConnectionPool
+from sqlalchemy import Column, Integer, String, Text, create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 from src.data.generate import generate_dictionary, generate_image
 from src.definitions import DICTIONARY_TABLE_NAME, IMAGE_FOLDER
 
-pool = ThreadedConnectionPool(
-    minconn=1,
-    maxconn=10,
-    dbname=os.environ["POSTGRES_DB"],
-    user=os.environ["POSTGRES_USER"],
-    password=os.environ["POSTGRES_PASSWORD"],
-    host="postgres",
-    port="5432",
-)
+DATABASE_URL = f"postgresql://{os.environ['POSTGRES_USER']}:{os.environ['POSTGRES_PASSWORD']}@postgres_db:5432/{os.environ['POSTGRES_DB']}"
+
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(bind=engine)
+
+Base = declarative_base()
+
+
+class Dictionary(Base):
+    __tablename__ = DICTIONARY_TABLE_NAME
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    word = Column(String, unique=True, nullable=False)
+    meaning = Column(Text)
+    synonyms = Column(Text)
+    usage = Column(Text)
+    phonetics = Column(String)
+    pronunciation = Column(Text)
+    image_description = Column(Text)
+    error = Column(Text)
+    suggestions = Column(Text)
 
 
 def create_table():
     """Creates the dictionary table in the database."""
-    conn = pool.getconn()
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute(f"""
-                CREATE TABLE {DICTIONARY_TABLE_NAME} (
-                    id SERIAL PRIMARY KEY,
-                    word TEXT NOT NULL,
-                    meaning TEXT NOT NULL,
-                    synonyms TEXT NOT NULL,
-                    usage TEXT NOT NULL,
-                    phonetics TEXT NOT NULL,
-                    pronunciation TEXT NOT NULL,
-                    image_description TEXT NOT NULL,
-                    error TEXT NOT NULL,
-                    suggestions TEXT NOT NULL
-                )
-            """)
-            conn.commit()
-    finally:
-        pool.putconn(conn)
+    Base.metadata.create_all(engine)
 
 
 def drop_table(table_name: str):
     """Drops the given table from the database."""
-    conn = pool.getconn()
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
-            conn.commit()
-    finally:
-        pool.putconn(conn)
+    Dictionary.__table__.drop(engine)
 
 
 def get_dictionary(word: str) -> dict:
@@ -59,33 +47,50 @@ def get_dictionary(word: str) -> dict:
 
     If it does not exist, it creates it and puts it into the database."""
 
-    conn = pool.getconn()
+    session = SessionLocal()
     try:
-        with conn.cursor() as cursor:
-            cursor.execute(f"SELECT * FROM {DICTIONARY_TABLE_NAME} WHERE word = '{word}'")
-            dictionary = cursor.fetchall()
+        entry = session.query(Dictionary).filter_by(word=word).first()
+        if entry:
+            return {
+                "word": entry.word,
+                "meaning": entry.meaning,
+                "synonyms": entry.synonyms.split(",") if entry.synonyms else [],
+                "usage": entry.usage.split("\n") if entry.usage else [],
+                "phonetics": entry.phonetics,
+                "pronunciation": entry.pronunciation.split(",") if entry.pronunciation else [],
+                "image_description": entry.image_description,
+                "error": entry.error,
+                "suggestions": entry.suggestions.split(",") if entry.suggestions else [],
+            }
+
+        # If not found, generate and insert
+        dictionary = generate_dictionary(word)
+        put_dictionary(word, dictionary)
+        return dictionary
+
     finally:
-        pool.putconn(conn)
-
-    if dictionary:
-        return dictionary[0]
-
-    dictionary = generate_dictionary(word)
-    put_dictionary(word, dictionary["error"], dictionary.get("suggestions", []))
-    return dictionary
+        session.close()
 
 
-def put_dictionary(word: str, error: str, suggestions: list):
-    """Puts dictionary information for a word into the database."""
-    conn = pool.getconn()
+def put_dictionary(word: str, dictionary: dict):
+    """Inserts or updates dictionary information for a word."""
+    session = SessionLocal()
     try:
-        with conn.cursor() as cursor:
-            cursor.execute(
-                f"INSERT INTO {DICTIONARY_TABLE_NAME} (word, error, suggestions) VALUES ('{word}', '{error}', '{suggestions}')"
-            )
-            conn.commit()
+        entry = Dictionary(
+            word=word,
+            meaning=dictionary.get("meaning", ""),
+            synonyms=",".join(dictionary.get("synonyms", [])),
+            usage="\n".join(dictionary.get("usage", [])),
+            phonetics=dictionary.get("phonetics", ""),
+            pronunciation=",".join(dictionary.get("pronunciation", [])),
+            image_description=dictionary.get("image_description", ""),
+            error=dictionary.get("error", ""),
+            suggestions=",".join(dictionary.get("suggestions", [])),
+        )
+        session.merge(entry)  # Upserts the entry
+        session.commit()
     finally:
-        pool.putconn(conn)
+        session.close()
 
 
 def get_image(word: str, image_description: str | None = None) -> str:

@@ -6,8 +6,7 @@ from flask import Flask, send_from_directory
 
 from components import paper_with_label
 from definitions import IMAGE_FOLDER
-from src.data.database import get_dictionary
-from src.data.generate import generate_image
+from src.data.database import get_dictionary, get_image
 
 _dash_renderer._set_react_version("18.2.0")
 
@@ -47,7 +46,7 @@ app.layout = dmc.MantineProvider(
                     id="search-input",
                     w=300,
                     radius="sm",
-                    autoComplete="on",
+                    # autoComplete="on",
                     rightSectionWidth="68",
                     rightSection=dmc.Group(
                         gap="0px",
@@ -236,8 +235,7 @@ def show_image(dict_):
 
     image_text = dict_.get("image_description")
     word = dict_.get("word")
-    generate_image(word, image_text)
-    return f"/images/{word}.png", False
+    return get_image(word, image_text), False
 
 
 @app.callback(
