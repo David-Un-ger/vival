@@ -1,19 +1,21 @@
 services:
   devcontainer:
     container_name: devcontainer
+    # image: vival-devcontainer:latest
     build:
-      context: .
-      dockerfile: Dockerfile
+     context: .
+     dockerfile: Dockerfile
     restart: always
     volumes:
      - .:/workspace
-    command: python src/app.py
+    # command: ["sleep", "infinity"]
+    command: python /workspace/src/app.py
     ports:
       - "8050:8050"
     expose:
       - "8050"
     networks:
-      - default
+     - default
 
   postgres:
     image: postgres:latest
@@ -43,11 +45,23 @@ services:
     restart: always
     ports:
       - "80:80"
+      - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./certs:/etc/letsencrypt
     networks:
       - default
 
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    command: certonly --webroot --webroot-path=/var/www/certbot -d vival.ai
+    volumes:
+      - ./certs:/etc/letsencrypt  # Share certs volume with nginx
+      - ./certbot-webroot:/var/www/certbot  # Temporary directory for webroot
+    networks:
+      - default
 volumes:
   pgadmin_data:
   postgres_data:
