@@ -62,6 +62,18 @@ services:
       - ./certbot-webroot:/var/www/certbot  # Temporary directory for webroot
     networks:
       - default
+
+  ddclient:
+    image: linuxserver/ddclient
+    container_name: ddclient
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Berlin
+  
 volumes:
   pgadmin_data:
   postgres_data:
