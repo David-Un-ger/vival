@@ -4,9 +4,9 @@ from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
 from flask import Flask, send_from_directory
 
-from components import paper_with_label
-from definitions import IMAGE_FOLDER
+from src.components import paper_with_label
 from src.data.database import get_dictionary, get_image
+from src.definitions import IMAGE_FOLDER
 
 _dash_renderer._set_react_version("18.2.0")
 
