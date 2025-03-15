@@ -18,6 +18,7 @@ services:
       - "80"
     networks:
      - default
+    network_mode: "host"
 
 
   cloudflared:
