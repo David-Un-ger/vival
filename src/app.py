@@ -5,7 +5,7 @@ from dash_iconify import DashIconify
 from flask import Flask, send_from_directory
 
 from src.components import paper_with_label
-from src.data.database import get_dictionary, get_image
+from src.data.database import get_dictionary, get_image, create_table
 from src.definitions import IMAGE_FOLDER
 
 _dash_renderer._set_react_version("18.2.0")
@@ -253,4 +253,5 @@ def clear_search_and_hide_output_card(n_clicks):
 
 if __name__ == "__main__":
     # app.run(debug=False)
+    create_table()
     app.run(host="0.0.0.0", port=8050, debug=True)  # http://localhost:8050

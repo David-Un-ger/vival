@@ -10,13 +10,9 @@ services:
     volumes:
      - .:/workspace
     # command: ["sleep", "infinity"]
-    # command: .venv/bin/python3 src/app.py
-    # command: .venv/bin/gunicorn -b 0.0.0.0:80 -w 4 src.app:server
-    command: /uv/.venv/bin/gunicorn -b [::]:80 -w 4 src.app:server
+    command: /uv/.venv/bin/gunicorn -b [::]:8080 -w 4 src.app:server
     ports:
-      - "80:80"
-    expose:
-      - "80"
+      - "80:8080"
     networks:
       - default
 
