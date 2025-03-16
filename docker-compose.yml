@@ -5,14 +5,14 @@ services:
     build:
      context: .
      dockerfile: Dockerfile
-     networks: "host"
+     network: "host"
     restart: always
     volumes:
      - .:/workspace
     # command: ["sleep", "infinity"]
     # command: .venv/bin/python3 src/app.py
     # command: .venv/bin/gunicorn -b 0.0.0.0:80 -w 4 src.app:server
-    command: .venv/bin/gunicorn -b 0.0.0.0:80 -b [::]:80 -w 4 src.app:server
+    command: .venv/bin/gunicorn -b [::]:80 -w 4 src.app:server
     ports:
       - "80:80"
     expose:
