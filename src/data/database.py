@@ -5,6 +5,7 @@ from io import BytesIO
 from PIL import Image
 from sqlalchemy import Column, Integer, String, Text, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.sql import func
 
 from src.data.generate import generate_dictionary, generate_image
 from src.definitions import DICTIONARY_TABLE_NAME, IMAGE_FOLDER
@@ -67,6 +68,18 @@ def get_dictionary(word: str) -> dict:
         dictionary = generate_dictionary(word)
         put_dictionary(word, dictionary)
         return dictionary
+
+    finally:
+        session.close()
+
+
+def get_random_word() -> str:
+    """Checks which words are available in the DB and selects one randomly."""
+    session = SessionLocal()
+    try:
+        entry = session.query(Dictionary).order_by(func.random()).first()
+        if entry:
+            return entry.word
 
     finally:
         session.close()

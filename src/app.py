@@ -5,7 +5,7 @@ from dash_iconify import DashIconify
 from flask import Flask, send_from_directory
 
 from src.components import paper_with_label
-from src.data.database import create_table, get_dictionary, get_image
+from src.data.database import create_table, get_dictionary, get_image, get_random_word
 from src.definitions import IMAGE_FOLDER
 
 _dash_renderer._set_react_version("18.2.0")
@@ -87,7 +87,6 @@ app.layout = dmc.MantineProvider(
                                             "Meaning",
                                             [
                                                 dmc.Text(
-                                                    "Landscape describes the visible features of an area of land, including physical elements such as landforms, living elements of flora and fauna, abstract elements such as lighting and weather conditions, and human elements, for instance human activity or the built environment.",
                                                     id="show-meaning",
                                                     size="sm",
                                                 )
@@ -96,41 +95,19 @@ app.layout = dmc.MantineProvider(
                                         paper_with_label(
                                             "Usage examples",
                                             [
-                                                dmc.List(
-                                                    [
-                                                        dmc.ListItem(
-                                                            "First example sentence - the landscape of canada is beautiful"
-                                                        ),
-                                                        dmc.ListItem(
-                                                            "The construction of the landscape was a challenge"
-                                                        ),
-                                                    ],
-                                                    id="show-usage",
-                                                    size="sm",
-                                                ),
+                                                dmc.List(id="show-usage", size="sm"),
                                             ],
                                         ),
                                         paper_with_label(
                                             "Phonetics",
                                             [
-                                                dmc.Text(
-                                                    "/ˈlændskeɪp/",
-                                                    size="sm",
-                                                    id="show-phonetics",
-                                                ),
+                                                dmc.Text(size="sm", id="show-phonetics"),
                                             ],
                                         ),
                                         paper_with_label(
                                             "Synonyms",
                                             [
-                                                dmc.Group(
-                                                    [
-                                                        dmc.Badge("mountain"),
-                                                        dmc.Badge("water"),
-                                                        dmc.Badge("sky"),
-                                                    ],
-                                                    id="show-synonyms",
-                                                ),
+                                                dmc.Group(id="show-synonyms"),
                                             ],
                                         ),
                                     ],
@@ -147,12 +124,7 @@ app.layout = dmc.MantineProvider(
                                                     overlayProps={"radius": "sm", "blur": 5},
                                                     zIndex=10,
                                                 ),
-                                                dmc.Image(
-                                                    src="https://raw.githubusercontent.com/mantinedev/mantine/master/.demo/images/bg-8.png",
-                                                    # h=256,
-                                                    # w=256,
-                                                    id="show-image",
-                                                ),
+                                                dmc.Image(id="show-image"),
                                             ],
                                             center=True,
                                         ),
@@ -190,16 +162,18 @@ app.layout = dmc.MantineProvider(
 def enter_search(n_submit, n_clicks, url, word):
     if n_submit is None and n_clicks is None and url is None:
         raise PreventUpdate
-    print(ctx.triggered_id, ctx.triggered_id, word, url)
-    print(ctx.triggered_id == "url", ctx.triggered_id == "url.search")
     if ctx.triggered_id == "url":
         # if the url is loaded, use the url. Otherwise use the text input
         if url is None:
             raise PreventUpdate
-        url_word = url.lstrip("?s=")
-        if url_word == word:
-            raise PreventUpdate
-        word = url_word
+
+        if url == "":
+            word = get_random_word()
+        else:
+            url_word = url.lstrip("?s=")
+            if url_word == word:
+                raise PreventUpdate
+            word = url_word
     return word, True, {"display": "block"}
 
 
